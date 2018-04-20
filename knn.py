@@ -3,16 +3,16 @@ import operator
 import math
 from scipy.io import arff
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 
-def loadDataset(filename):
+def load_data_set(filename):
     data = arff.loadarff(filename)
     df = pd.DataFrame(data[0])
     df = df.astype('int')
     return df
 
-def euclideanDistance(instance1, instance2, length):
+
+def euclidean_distance(instance1, instance2, length):
     distance = 0
     for x in range(length):
         distance += pow((instance1[x] - instance2[x]), 2)
@@ -23,7 +23,7 @@ def get_neighbors(train_x, test_x, k):
     distances = []
     length = len(test_x) - 1
     for x in range(len(train_x)):
-        dist = euclideanDistance(test_x, train_x[x], length)
+        dist = euclidean_distance(test_x, train_x[x], length)
         distances.append((train_x[x], dist))
     distances.sort(key=operator.itemgetter(1))
     neighbors = []
@@ -32,24 +32,24 @@ def get_neighbors(train_x, test_x, k):
     return neighbors
 
 
-def get_response(neighbors):
-    classVotes = {}
+def get_predictions(neighbors):
+    neighs = {}
     for x in range(len(neighbors)):
         response = neighbors[x][-1]
-        if response in classVotes:
-            classVotes[response] += 1
+        if response in neighs:
+            neighs[response] += 1
         else:
-            classVotes[response] = 1
-    sortedVotes = sorted(classVotes.items(), key=operator.itemgetter(1), reverse=True)
-    return sortedVotes[0][0]
+            neighs[response] = 1
+    sorted_neighs = sorted(neighs.items(), key=operator.itemgetter(1), reverse=True)
+    return sorted_neighs[0][0]
 
 
-def get_accuracy(testSet, predictions):
+def get_accuracy(test_set, predictions):
     correct = 0
-    for x in range(len(testSet)):
-        if testSet[x][-1] == predictions[x]:
+    for x in range(len(test_set)):
+        if test_set[x][-1] == predictions[x]:
             correct += 1
-    return (correct/float(len(testSet))) * 100.0
+    return correct/float(len(test_set))
 
 
 class knn(classifier):
@@ -66,20 +66,6 @@ class knn(classifier):
         hypothesis = []
         for x in range(len(X)):
             neighbors = get_neighbors(self.train_x, X[x], self.k)
-            result = get_response(neighbors)
+            result = get_predictions(neighbors)
             hypothesis.append(result)
         return hypothesis
-
-
-if __name__ == '__main__':
-    df = loadDataset('data/PhishingData.arff')
-    trainSet, testSet = train_test_split(df, test_size=0.2, random_state=42, shuffle=False)
-    trainSet = trainSet.values.tolist()
-    testSet = testSet.values.tolist()
-
-    for k in range(2, 12):
-        knnclf = knn(k)
-        knnclf.fit(trainSet, trainSet)
-        hyp = knnclf.predict(testSet)
-        score = get_accuracy(testSet, hyp)
-        print('Score=', score, "k=", k)
